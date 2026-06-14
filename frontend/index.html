@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>P2P Web Share</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="app-container">
+  <div class="card">
+
+    <!-- ── Header ──────────────────────────────────────────────────────────── -->
+    <header class="card-header">
+      <div class="header-top">
+        <div class="logo">
+          <span class="logo-icon">⚡</span>
+          <div>
+            <h1 class="app-title">P2P Web Share</h1>
+            <p class="app-subtitle">Direct browser-to-browser file transfer</p>
+          </div>
+        </div>
+        <div id="connection-badge" class="conn-badge disconnected">● Disconnected</div>
+      </div>
+    </header>
+
+    <!-- ── Body ────────────────────────────────────────────────────────────── -->
+    <main class="card-body">
+
+      <!-- 1. Server Connection ─────────────────────────────────────────────── -->
+      <section id="server-section" class="section">
+        <p class="section-label">Server Connection</p>
+        <div class="status-row">
+          <div id="status-dot" class="status-dot disconnected"></div>
+          <span id="status-text">Not connected to signaling server</span>
+        </div>
+        <div class="btn-row">
+          <button id="connect-btn" class="btn btn-primary">Connect</button>
+          <button id="disconnect-btn" class="btn btn-ghost" disabled>Disconnect</button>
+        </div>
+      </section>
+
+      <!-- 2. Room ──────────────────────────────────────────────────────────── -->
+      <section id="room-section" class="section" hidden>
+        <div class="divider"></div>
+        <p class="section-label">Room</p>
+
+        <div class="room-header">
+          <span id="room-badge" class="room-badge idle">No Room</span>
+          <span id="room-id-display" class="room-id-large"></span>
+        </div>
+
+        <!-- Room actions: create or join -->
+        <div id="room-actions">
+          <div class="room-panels">
+            <div class="room-panel">
+              <p class="panel-label">Start a new session</p>
+              <button id="create-room-btn" class="btn btn-primary">Create Room</button>
+            </div>
+            <div class="panel-or">or</div>
+            <div class="room-panel">
+              <p class="panel-label">Join existing session</p>
+              <div class="join-row">
+                <input id="room-id-input" class="room-input" type="text"
+                       placeholder="Room ID" maxlength="6"
+                       autocomplete="off" spellcheck="false" />
+                <button id="join-room-btn" class="btn btn-primary join-btn">Join</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Room info: shown after create or join -->
+        <div id="room-info" hidden>
+          <div class="info-box">
+            <div>
+              <span class="info-label">Room ID</span>
+              <span id="room-info-code" class="info-code">——</span>
+            </div>
+            <p id="room-info-msg" class="info-msg">Waiting for peer...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. WebRTC Connection ─────────────────────────────────────────────── -->
+      <section id="webrtc-section" class="section" hidden>
+        <div class="divider"></div>
+        <p class="section-label">WebRTC Connection</p>
+
+        <div class="stats-grid">
+          <div class="stat-box">
+            <span class="stat-label">Role</span>
+            <span id="webrtc-role" class="stat-value">—</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Signaling</span>
+            <span id="webrtc-signaling" class="stat-value">Idle</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">ICE</span>
+            <span id="webrtc-ice" class="stat-value">—</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Connection</span>
+            <span id="webrtc-conn" class="stat-value">—</span>
+          </div>
+        </div>
+
+        <div class="badge-center">
+          <span id="webrtc-badge" class="webrtc-badge not-connected">🔴 Not Connected</span>
+        </div>
+      </section>
+
+      <!-- 4. File Transfer ─────────────────────────────────────────────────── -->
+      <section id="transfer-section" class="section" hidden>
+        <div class="divider"></div>
+        <p class="section-label">File Transfer</p>
+
+        <!-- Host: sender panel -->
+        <div id="sender-panel" hidden>
+
+          <!-- Drag & Drop Zone -->
+          <div id="drop-zone" class="drop-zone">
+            <div class="drop-zone-icon">📂</div>
+            <p class="drop-zone-text">Drag &amp; drop a file here</p>
+            <p class="drop-zone-sub">or</p>
+            <label class="choose-file-btn">
+              Choose File
+              <input id="file-input" type="file" />
+            </label>
+          </div>
+
+          <!-- Selected file info row (hidden until file chosen) -->
+          <div id="file-info-row" class="file-info-row" hidden>
+            <span class="file-icon-sm">📄</span>
+            <div class="file-details">
+              <span id="file-name-display" class="file-name"></span>
+              <span id="file-size-display" class="file-size"></span>
+            </div>
+            <button id="clear-file-btn" class="btn-icon" title="Remove file">✕</button>
+          </div>
+
+          <button id="send-file-btn" class="btn btn-primary btn-full" disabled>
+            Send File ↑
+          </button>
+          <p id="sender-status" class="sender-status" hidden></p>
+        </div>
+
+        <!-- Guest: receiver panel -->
+        <div id="receiver-panel" hidden>
+          <div class="receiver-box">
+            <div class="receiver-icon">📥</div>
+            <p id="receiver-heading" class="receiver-heading">Waiting for file from host...</p>
+            <p id="receiver-status" class="receiver-status"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Transfer Progress ─────────────────────────────────────────────── -->
+      <section id="progress-section" class="section" hidden>
+        <div class="divider"></div>
+        <p class="section-label">Transfer Progress</p>
+
+        <div class="progress-wrap">
+          <div class="progress-track">
+            <div id="progress-fill" class="progress-fill" style="width:0%"></div>
+          </div>
+          <span id="progress-percent" class="progress-percent">0%</span>
+        </div>
+
+        <div class="progress-stats">
+          <div class="progress-stat">
+            <span class="progress-stat-label">Transferred</span>
+            <span id="stat-bytes" class="progress-stat-value">—</span>
+          </div>
+          <div class="progress-stat">
+            <span class="progress-stat-label">Speed</span>
+            <span id="stat-speed" class="progress-stat-value">—</span>
+          </div>
+          <div class="progress-stat">
+            <span class="progress-stat-label">Remaining</span>
+            <span id="stat-remaining" class="progress-stat-value">—</span>
+          </div>
+          <div class="progress-stat">
+            <span class="progress-stat-label">ETA</span>
+            <span id="stat-eta" class="progress-stat-value">—</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. File Integrity Verification ──────────────────────────────────── -->
+      <section id="verification-section" class="section" hidden>
+        <div class="divider"></div>
+        <p class="section-label">File Integrity</p>
+        <div id="verification-result" class="verification-result"></div>
+        <div id="hash-display" class="hash-display" hidden>
+          <div class="hash-row">
+            <span class="hash-label">Sent SHA-256</span>
+            <code id="hash-sent" class="hash-value"></code>
+          </div>
+          <div class="hash-row">
+            <span class="hash-label">Received SHA-256</span>
+            <code id="hash-received" class="hash-value"></code>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. Security / Encryption ────────────────────────────────────────── -->
+      <section id="security-section" class="section" hidden>
+        <div class="divider"></div>
+        <div id="encryption-badge" class="encryption-badge">
+          <span class="enc-icon">🔒</span>
+          <div>
+            <strong>End-to-End Encrypted</strong>
+            <p>AES-GCM 256-bit &nbsp;·&nbsp; Key never leaves your browser</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. Console ──────────────────────────────────────────────────────── -->
+      <div class="divider"></div>
+      <div class="console-wrap">
+        <div class="console-header">
+          <div class="console-dots">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+          </div>
+          <span class="console-title">console output</span>
+          <button id="clear-console-btn" class="console-clear-btn">clear</button>
+        </div>
+        <div id="console-output" class="console">
+          <p class="console-placeholder">Click "Connect" to start…</p>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ── Footer ──────────────────────────────────────────────────────────── -->
+    <footer class="card-footer">
+      P2P Web Share &nbsp;·&nbsp; No files touch the server &nbsp;·&nbsp;
+      <span class="footer-accent">WebRTC Direct</span>
+    </footer>
+
+  </div>
+</div>
+
+<!--
+  Script load order — each file depends on the ones before it:
+    1. ui.js        window.ui.*          (all DOM manipulation lives here)
+    2. websocket.js window.sendToServer, window.messageHandlers, window.logToConsole
+    3. crypto.js    window.p2pCrypto.*   (AES-GCM, Phase 8)
+    4. hash.js      window.p2pHash.*     (SHA-256,  Phase 5)
+    5. webrtc.js    window.webrtc.*      (Phase 3)
+    6. transfer.js  window.transfer.*    (Phase 4)
+    7. room.js      registers messageHandlers, sets onWsConnect/onWsDisconnect
+-->
+<script src="js/ui.js"></script>
+<script src="js/websocket.js"></script>
+<script src="js/crypto.js"></script>
+<script src="js/hash.js"></script>
+<script src="js/webrtc.js"></script>
+<script src="js/transfer.js"></script>
+<script src="js/room.js"></script>
+
+</body>
+</html>
