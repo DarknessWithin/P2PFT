@@ -10,7 +10,7 @@
 //
 // Uses window.ui and window.logToConsole (both defined by ui.js, which loads first).
 
-const WS_URL = "ws://localhost:8000/ws";
+const WS_URL = "https://p2pft.onrender.com/ws";
 
 let socket = null;
 
